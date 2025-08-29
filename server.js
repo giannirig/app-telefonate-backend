@@ -8,17 +8,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Usa un pool di connessioni invece di una singola connessione
+// Usa un pool di connessioni leggendo le credenziali dalle Environment Variables
 const pool = mysql.createPool({
-  host: 'srv1799.hstgr.io',
-  user: 'u937909507_lingotribeus',
-  password: 'Eccheccazzo1!',
-  database: 'u937909507_lingotribedb',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  acquireTimeout: 30000,
-  charset: 'utf8mb4'
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 const dbConnection = pool.promise();
