@@ -9,20 +9,26 @@ const cors = require('cors');
 // 2. CONFIGURAZIONE DELL'APPLICAZIONE
 const app = express();
 
-// Configurazione CORS Specifica
+// ========= NUOVA CONFIGURAZIONE CORS COMPLETA =========
+// server.js
+
 const app = express();
 
-// ========= NUOVA CONFIGURAZIONE CORS COMPLETA =========
+// ========= CONFIGURAZIONE CORS FINALE E COMPLETA =========
 const corsOptions = {
   origin: 'https://lingotribe.eazycom.it', // URL del tuo front-end
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE", // Metodi HTTP consentiti
-  preflightContinue: false,
+  credentials: true,
   optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
+// Aggiungi questa riga per rispondere esplicitamente a tutte le richieste preflight
+app.options('*', cors(corsOptions));
 // ========================================================
 
 app.use(express.json());
+
+
 
 // 3. CONFIGURAZIONE DEL DATABASE
 const pool = mysql.createPool({
