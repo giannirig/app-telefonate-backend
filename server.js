@@ -1,14 +1,19 @@
 // server.js
+
+// 1. IMPORTAZIONI
 const bcrypt = require('bcrypt');
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 
+// 2. CONFIGURAZIONE DELL'APPLICAZIONE
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(cors()); // Abilita le richieste da altri domini (il nostro front-end)
+app.use(express.json()); // Permette al server di leggere dati JSON inviati nelle richieste
 
-// Usa un pool di connessioni leggendo le credenziali dalle Environment Variables
+// 3. CONFIGURAZIONE DEL DATABASE
+// Usa un pool di connessioni per gestire le connessioni in modo efficiente.
+// Le credenziali vengono lette in modo sicuro dalle Environment Variables (impostate su Render)
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -17,45 +22,38 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  charset: 'utf8mb4',
   ssl: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    ciphers: 'AES128-SHA'
   }
 });
 
 const dbConnection = pool.promise();
 
-// Test connessione
+// Funzione helper per testare la connessione al database
 async function testConnection() {
   try {
-    // Usiamo il pool per ottenere una connessione temporanea per il test
     await dbConnection.execute('SELECT 1');
-    console.log('Connessione database: OK');
+    console.log('Connessione al database stabilita con successo.');
     return true;
   } catch (error) {
-    console.error('Errore connessione database:', error.message);
+    console.error('ERRORE: Impossibile connettersi al database.', error.message);
     return false;
   }
 }
 
-// API di test
+// 4. API ROUTES (le "strade" del nostro server)
+
+// API di test per verificare che il server sia online
 app.get('/', (req, res) => {
-  res.send('Server attivo e funzionante!');
+  res.send('Server dell\'app di prenotazione attivo!');
 });
 
-// Test database via API
-app.get('/test-db', async (req, res) => {
-  const isConnected = await testConnection();
-  if (isConnected) {
-    res.json({ message: 'Database connesso!' });
-  } else {
-    res.status(500).json({ message: 'Database non connesso' });
-  }
-});
-
+// API per la registrazione di un nuovo utente
 app.post('/register', async (req, res) => {
   try {
     const { username, name, phone, password } = req.body;
-
     if (!username || !name || !phone || !password) {
       return res.status(400).json({ message: 'Tutti i campi sono obbligatori.' });
     }
@@ -67,76 +65,19 @@ app.post('/register', async (req, res) => {
     await dbConnection.execute(sqlQuery, [username, name, phone, hashedPassword]);
 
     res.status(201).json({ message: 'Utente registrato con successo!' });
-
   } catch (error) {
     console.error('Errore durante la registrazione:', error);
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ message: 'Username già esistente.' });
     }
-    res.status(500).json({ message: 'Errore interno del server.' });
-  }
-}); // <-- PARENTESI GRAFFA MANCANTE AGGIUNTA QUI PER CHIUDERE LA FUNZIONE /register
-// ========= API PER LE DISPONIBILITÀ =========
-
-// API per aggiungere una nuova disponibilità
-app.post('/availability', async (req, res) => {
-  try {
-    // NOTA: In un'app reale, l'ID utente verrebbe da un token di autenticazione, non inviato dal client.
-    // Per ora, ci fidiamo del front-end per semplicità.
-    const { userId, date, time } = req.body;
-
-    if (!userId || !date || !time) {
-      return res.status(400).json({ message: 'ID utente, data e ora sono obbligatori.' });
-    }
-
-    const sqlQuery = 'INSERT INTO availabilities (user_id, slot_date, slot_time) VALUES (?, ?, ?)';
-    await dbConnection.execute(sqlQuery, [userId, date, time]);
-
-    res.status(201).json({ message: 'Disponibilità aggiunta con successo!' });
-
-  } catch (error) {
-    console.error('Errore durante l\'aggiunta della disponibilità:', error);
-    res.status(500).json({ message: 'Errore interno del server.' });
+    res.status(500).json({ message: 'Errore interno del server durante la registrazione.' });
   }
 });
 
-// API per ottenere tutte le disponibilità per una data specifica
-app.get('/availability', async (req, res) => {
-  try {
-    const { date } = req.query; // Prendiamo la data dalla URL, es: /availability?date=2025-08-29
-
-    if (!date) {
-      return res.status(400).json({ message: 'La data è un parametro obbligatorio.' });
-    }
-
-    // Query SQL con un JOIN per ottenere anche il nome dell'utente
-    const sqlQuery = `
-      SELECT 
-        availabilities.id, 
-        availabilities.slot_date, 
-        availabilities.slot_time, 
-        users.id AS userId,
-        users.name AS userName
-      FROM availabilities
-      JOIN users ON availabilities.user_id = users.id
-      WHERE availabilities.slot_date = ?
-      ORDER BY availabilities.slot_time ASC
-    `;
-    
-    const [availabilities] = await dbConnection.execute(sqlQuery, [date]);
-
-    res.status(200).json(availabilities);
-
-  } catch (error) {
-    console.error('Errore nel recupero delle disponibilità:', error);
-    res.status(500).json({ message: 'Errore interno del server.' });
-  }
-});
 // API per il login di un utente
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-
     if (!username || !password) {
       return res.status(400).json({ message: 'Username e password sono obbligatori.' });
     }
@@ -156,17 +97,66 @@ app.post('/login', async (req, res) => {
     } else {
       res.status(401).json({ message: 'Credenziali non valide.' });
     }
-
   } catch (error) {
     console.error('Errore durante il login:', error);
+    res.status(500).json({ message: 'Errore interno del server durante il login.' });
+  }
+});
+
+// API per aggiungere una nuova disponibilità
+app.post('/availability', async (req, res) => {
+  try {
+    const { userId, date, time, duration } = req.body;
+    if (!userId || !date || !time || !duration) {
+      return res.status(400).json({ message: 'ID utente, data, ora e durata sono obbligatori.' });
+    }
+
+    const sqlQuery = 'INSERT INTO availabilities (user_id, slot_date, slot_time, duration) VALUES (?, ?, ?, ?)';
+    await dbConnection.execute(sqlQuery, [userId, date, time, duration]);
+
+    res.status(201).json({ message: 'Disponibilità aggiunta con successo!' });
+  } catch (error) {
+    console.error('Errore durante l\'aggiunta della disponibilità:', error);
     res.status(500).json({ message: 'Errore interno del server.' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-  console.log(`🚀 Server in ascolto sulla porta ${PORT}`);
-  
-  // Test connessione all'avvio
-  setTimeout(testConnection, 2000); // Aspetta 2 secondi prima del test
+// API per ottenere tutte le disponibilità per una data specifica
+app.get('/availability', async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ message: 'La data è un parametro obbligatorio.' });
+    }
+
+    const sqlQuery = `
+      SELECT 
+        availabilities.id, 
+        availabilities.slot_date, 
+        availabilities.slot_time, 
+        availabilities.duration,
+        users.id AS userId,
+        users.name AS userName
+      FROM availabilities
+      JOIN users ON availabilities.user_id = users.id
+      WHERE availabilities.slot_date = ?
+      ORDER BY availabilities.slot_time ASC
+    `;
+    
+    const [availabilities] = await dbConnection.execute(sqlQuery, [date]);
+    res.status(200).json(availabilities);
+  } catch (error) {
+    console.error('Errore nel recupero delle disponibilità:', error);
+    res.status(500).json({ message: 'Errore interno del server.' });
+  }
 });
+
+
+// 5. AVVIO DEL SERVER
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server in ascolto sulla porta ${PORT}`);
+  // Testiamo la connessione al database poco dopo l'avvio
+  setTimeout(testConnection, 2000);
+});
+
