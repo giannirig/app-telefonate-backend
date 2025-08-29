@@ -1,4 +1,4 @@
-// server.js (Versione Finale)
+// server.js (Versione Finale e Corretta - 29 Agosto 2025)
 
 // 1. IMPORTAZIONI
 const bcrypt = require('bcrypt');
@@ -7,18 +7,18 @@ const mysql = require('mysql2');
 const cors = require('cors');
 
 // 2. CONFIGURAZIONE DELL'APPLICAZIONE
-const app = express();
+const app = express(); // Dichiarato UNA SOLA VOLTA
 
-// ========= NUOVA CONFIGURAZIONE CORS COMPLETA =========
-// server.js
+// Configurazione CORS completa per accettare richieste dai frontend specificati
+const allowedOrigins = [
+  'https://lingotribe.eazycom.it',
+  // Sostituisci la riga qui sotto con il tuo URL reale che ti ha dato Netlify
+  'https://TUO_URL_UNICO.netlify.app' 
+];
 
-const app = express();
-
-// ========= CONFIGURAZIONE CORS FINALE E COMPLETA =========
 const corsOptions = {
-  origin: 'https://lingotribe.eazycom.it', // URL del tuo front-end
-  origin: 'https://lingo4tribe.netlify.app'
   origin: function (origin, callback) {
+    // Permette le richieste senza 'origin' (es. da app desktop come Thunder Client) o se l'origine è nella lista
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -29,14 +29,11 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 204
 };
+
 app.use(cors(corsOptions));
-// Aggiungi questa riga per rispondere esplicitamente a tutte le richieste preflight
-app.options('*', cors(corsOptions));
-// ========================================================
+app.options('*', cors(corsOptions)); // Gestisce le richieste di controllo "preflight"
 
-app.use(express.json());
-
-
+app.use(express.json()); // Middleware per leggere il body delle richieste JSON
 
 // 3. CONFIGURAZIONE DEL DATABASE
 const pool = mysql.createPool({
@@ -58,7 +55,7 @@ const dbConnection = pool.promise();
 
 // 4. API ROUTES (le "strade" del nostro server)
 
-// API di test
+// API di test per verificare che il server sia online
 app.get('/', (req, res) => {
   res.send('Server dell\'app di prenotazione attivo!');
 });
@@ -134,8 +131,12 @@ app.get('/availability', async (req, res) => {
     }
     const sqlQuery = `
       SELECT 
-        availabilities.id, availabilities.slot_date, availabilities.slot_time, 
-        availabilities.duration, users.id AS userId, users.name AS userName
+        availabilities.id, 
+        availabilities.slot_date, 
+        availabilities.slot_time, 
+        availabilities.duration,
+        users.id AS userId,
+        users.name AS userName
       FROM availabilities
       JOIN users ON availabilities.user_id = users.id
       WHERE availabilities.slot_date = ?
