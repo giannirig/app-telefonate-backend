@@ -8,7 +8,13 @@ const cors = require('cors');
 
 // 2. CONFIGURAZIONE DELL'APPLICAZIONE
 const app = express();
-app.use(cors());
+
+// Configurazione CORS Specifica
+const corsOptions = {
+  origin: 'https://lingotribe.eazycom.it' // Specifica l'URL esatto del tuo front-end
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // 3. CONFIGURAZIONE DEL DATABASE
