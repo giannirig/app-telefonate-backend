@@ -1,4 +1,4 @@
-// server.js (Versione Finale e Corretta - 29 Agosto 2025)
+// server.js (Versione Finale)
 
 // 1. IMPORTAZIONI
 const bcrypt = require('bcrypt');
@@ -7,19 +7,36 @@ const mysql = require('mysql2');
 const cors = require('cors');
 
 // 2. CONFIGURAZIONE DELL'APPLICAZIONE
-const app = express(); // Dichiarato UNA SOLA VOLTA
+const app = express();
 
-// Configurazione CORS completa per accettare richieste dal frontend
+// ========= NUOVA CONFIGURAZIONE CORS COMPLETA =========
+// server.js
+
+const app = express();
+
+// ========= CONFIGURAZIONE CORS FINALE E COMPLETA =========
 const corsOptions = {
-  origin: 'https://lingotribe.eazycom.it',
+  origin: 'https://lingotribe.eazycom.it', // URL del tuo front-end
+  origin: 'https://lingo4tribe.netlify.app'
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Gestisce le richieste di controllo "preflight"
+// Aggiungi questa riga per rispondere esplicitamente a tutte le richieste preflight
+app.options('*', cors(corsOptions));
+// ========================================================
 
-app.use(express.json()); // Middleware per leggere il body delle richieste JSON
+app.use(express.json());
+
+
 
 // 3. CONFIGURAZIONE DEL DATABASE
 const pool = mysql.createPool({
@@ -41,7 +58,7 @@ const dbConnection = pool.promise();
 
 // 4. API ROUTES (le "strade" del nostro server)
 
-// API di test per verificare che il server sia online
+// API di test
 app.get('/', (req, res) => {
   res.send('Server dell\'app di prenotazione attivo!');
 });
@@ -117,12 +134,8 @@ app.get('/availability', async (req, res) => {
     }
     const sqlQuery = `
       SELECT 
-        availabilities.id, 
-        availabilities.slot_date, 
-        availabilities.slot_time, 
-        availabilities.duration,
-        users.id AS userId,
-        users.name AS userName
+        availabilities.id, availabilities.slot_date, availabilities.slot_time, 
+        availabilities.duration, users.id AS userId, users.name AS userName
       FROM availabilities
       JOIN users ON availabilities.user_id = users.id
       WHERE availabilities.slot_date = ?
@@ -157,6 +170,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server in ascolto sulla porta ${PORT}`);
 });
+
 
 
 
