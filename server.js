@@ -13,7 +13,7 @@ const app = express(); // Dichiarato UNA SOLA VOLTA
 const allowedOrigins = [
   'https://lingotribe.eazycom.it',
   // Sostituisci la riga qui sotto con il tuo URL reale che ti ha dato Netlify
-  'https://TUO_URL_UNICO.netlify.app' 
+  'https://lingo4tribe.netlify.app' 
 ];
 
 const corsOptions = {
@@ -171,6 +171,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server in ascolto sulla porta ${PORT}`);
 });
+
 
 
 
