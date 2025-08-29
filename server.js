@@ -7,19 +7,15 @@ const mysql = require('mysql2');
 const cors = require('cors');
 
 // 2. CONFIGURAZIONE DELL'APPLICAZIONE
-const app = express(); // Dichiarato UNA SOLA VOLTA
-
-// Configurazione CORS completa per accettare richieste dai frontend specificati
+// 
 const allowedOrigins = [
   'https://lingotribe.eazycom.it',
-  // Sostituisci la riga qui sotto con il tuo URL reale che ti ha dato Netlify
-  'https://TUO_URL_UNICO.netlify.app' 
+  'https://lingo4tribe.netlify.app'
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permette le richieste senza 'origin' (es. da app desktop come Thunder Client) o se l'origine è nella lista
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -31,7 +27,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Gestisce le richieste di controllo "preflight"
+// Risponde esplicitamente a tutte le richieste preflight
+app.options('*', cors(corsOptions));
+// =================================================
+
 
 app.use(express.json()); // Middleware per leggere il body delle richieste JSON
 
