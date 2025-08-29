@@ -12,8 +12,7 @@ const app = express(); // Dichiarato UNA SOLA VOLTA
 // Configurazione CORS completa per accettare richieste dai frontend specificati
 const allowedOrigins = [
   'https://lingotribe.eazycom.it',
-  // Sostituisci la riga qui sotto con il tuo URL reale che ti ha dato Netlify
-  'https://lingo4tribe.netlify.app' 
+  'https://lingochat-bb9fa52a67ad.herokuapp.com/' 
 ];
 
 const corsOptions = {
