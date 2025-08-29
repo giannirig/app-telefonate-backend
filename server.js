@@ -10,10 +10,17 @@ const cors = require('cors');
 const app = express();
 
 // Configurazione CORS Specifica
+const app = express();
+
+// ========= NUOVA CONFIGURAZIONE CORS COMPLETA =========
 const corsOptions = {
-  origin: 'https://lingotribe.eazycom.it' // Specifica l'URL esatto del tuo front-end
+  origin: 'https://lingotribe.eazycom.it', // URL del tuo front-end
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE", // Metodi HTTP consentiti
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
+// ========================================================
 
 app.use(express.json());
 
@@ -149,5 +156,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server in ascolto sulla porta ${PORT}`);
 });
+
 
 
