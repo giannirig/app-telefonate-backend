@@ -13,4 +13,9 @@
     "mysql2": "^3.6.3"
   }
 }
+{
+  "resolutions": {
+    "path-to-regexp": "^6.2.1"
+  }
+}
 
